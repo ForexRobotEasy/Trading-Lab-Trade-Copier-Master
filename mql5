@@ -1,0 +1,93 @@
+
+// Trading Lab Trade Copier Master
+// Developer's site: forexroboteasy.com
+// Developed by Forex Robot Easy Team
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+#include <Trade\PositionInfo.mqh>
+
+// Define constants
+#define MAX_SLAVES 10
+#define MAX_SYMBOLS 10
+
+// Define variables
+int slavesCount = 0;
+int symbolsCount = 0;
+CPositionInfo positionInfo;
+CTrade trade;
+
+// Initialize trade copier
+void OnInit()
+{
+   // Initialize trade copier settings
+   trade.Init();
+   
+   // Get the number of slave terminals connected
+   slavesCount = trade.GetSlaveTerminalsCount();
+   
+   // Get the number of symbols being traded
+   symbolsCount = trade.GetSymbolsCount();
+   
+   // Set up trade copying from master to slaves
+   trade.SetTradeCopying(true);
+   
+   // Set up automatic adjustment of settings on slave terminals
+   trade.SetAutoAdjustment(true);
+   
+   // Set up stop loss and take profit copying
+   trade.SetStopLossCopying(true);
+   trade.SetTakeProfitCopying(true);
+}
+
+// Copy trades from master to slaves
+void OnTick()
+{
+   // Get the current position on master terminal
+   positionInfo.Refresh();
+   
+   // Copy trades to all slave terminals
+   for (int i = 0; i < slavesCount; i++)
+   {
+      for (int j = 0; j < symbolsCount; j++)
+      {
+         // Check if the symbol is being traded on the master terminal
+         if (trade.IsSymbolTraded(positionInfo.Symbol()))
+         {
+            // Check if the symbol is being traded on the slave terminal
+            if (trade.IsSymbolTraded(positionInfo.Symbol(), trade.GetSlaveTerminal(i)))
+            {
+               // Copy stop loss and take profit levels
+               trade.CopyStopLoss(positionInfo.Symbol(), trade.GetSlaveTerminal(i));
+               trade.CopyTakeProfit(positionInfo.Symbol(), trade.GetSlaveTerminal(i));
+            }
+         }
+      }
+   }
+}
+
+// Provide user-friendly interface for managing accounts
+void ManageAccounts()
+{
+   // Display account information for all slave terminals
+   for (int i = 0; i < slavesCount; i++)
+   {
+      trade.DisplayAccountInfo(trade.GetSlaveTerminal(i));
+   }
+}
+
+// Provide full control over Forex trading activities
+void ControlTradingActivities()
+{
+   // Perform necessary trading actions
+   trade.OpenPosition(positionInfo.Symbol(), TRADE_ACTION_SELL, positionInfo.Volume());
+   trade.ModifyPosition(positionInfo.Position(), positionInfo.StopLoss(), positionInfo.TakeProfit());
+   trade.ClosePosition(positionInfo.Position());
+}
+
+// Optimize code for speed of execution
+void OnDeinit(const int reason)
+{
+   // Clean up resources and terminate trade copier
+   trade.Deinit();
+}
